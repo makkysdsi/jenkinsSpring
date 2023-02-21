@@ -1,0 +1,111 @@
+Installation Guide for Spring Boot Application build & deployment for Ubuntu 22.04
+
+Sample Spring Boot Project - Employee details
+	https://github.com/makkysdsi/jenkinsSpring
+
+Details:
+1) OPENJDK version 11
+2) MAVEN version 4
+3) MySQL 8 
+	SERVER - localhost:3306 
+	user/pwd - root@localhost/yakshit
+4) Tomcat Version: 9.0.71
+
+Installation of OpenJDK
+	sudo apt install default-jre
+	sudo apt install default-jdk
+
+Installation of Maven
+	sudo apt install maven
+	to run -> mvn clean package
+
+Installation of MySQL
+Install mysql-server 
+	sudo apt-get install mysql-server
+	Server version: 8.0.32-0ubuntu0.22.04.2 (Ubuntu)
+
+Install mysql-server-jdbc-connector
+	https://cdn.mysql.com//Downloads/Connector-J/mysql-connector-j_8.0.32-1ubuntu22.04_all.deb 
+	https://dev.mysql.com/downloads/file/?id=515782
+	sudo dpkg -i mysql-connector-j....deb
+	Connector version: 8.0.32-1ubuntu22.04
+
+Configure MySQL
+	systemctl start mysql.service
+	sudo mysql
+	flush privileges;
+	USE mysql;
+	ALTER USER 'root'@'localhost' IDENTIFIED by 'yakshit'
+	quit
+	systemctl restart mysql.service
+	
+Installation of tomcat
+Download Tomcat
+	Download tomcat - https://tomcat.apache.org/download-90.cgi
+
+SetUp Tomcat	
+	SetUp user tomcat
+	sudo useradd -r -m -U -d /opt/tomcat -s /bin/false tomcat
+	wget -c https://downloads.apache.org/tomcat/tomcat-9/v9.0.71/bin/apache-tomcat-9.0.71.tar.gz
+	sudo tar xvzf apache-tomcat-..tar.gz -C /opt/tomcat
+	sudo ln -s /opt/tomcat/apache-tomcat-9.0.71 /opt/tomcat/updated
+	sudo chown -R tomcat: /opt/tomcat/*
+	sudo sh -c 'chmod +x /opt/tomcat/updated/bin/*.sh'
+	
+	Configuring Service
+	sudo gedit /etc/systemd/system/tomcat.service
+	
+	Add below lines in tomcat.service
+	* Change JAVA_HOME accordingly
+	
+		[Unit]
+		Description=Apache Tomcat Web Application Container
+		After=network.target
+
+		[Service]
+		Type=forking
+
+		Environment="JAVA_HOME=/usr/lib/jvm/java-1.11.0-openjdk-amd64"
+		Environment="CATALINA_PID=/opt/tomcat/updated/temp/tomcat.pid"
+		Environment="CATALINA_HOME=/opt/tomcat/updated/"
+		Environment="CATALINA_BASE=/opt/tomcat/updated/"
+		Environment="CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC"
+		Environment="JAVA_OPTS=-Djava.awt.headless=true -Djava.security.egd=file:/dev/./urandom"
+
+		ExecStart=/opt/tomcat/updated/bin/startup.sh
+		ExecStop=/opt/tomcat/updated/bin/shutdown.sh
+
+		User=tomcat
+		Group=tomcat
+		UMask=0007
+		RestartSec=10
+		Restart=always
+
+		[Install]
+		WantedBy=multi-user.target
+	
+	Enable & Check Service
+	sudo systemctl daemon-reload
+	sudo systemctl start tomcat
+	sudo systemctl status tomcat
+	sudo systemctl enable tomcat
+	
+Allow firewall rule for tomcat
+	sudo ufw allow 8080/tcp
+	
+	Default tomcat port is 8080
+	Steps to change port
+	sudo cd /opt/tomcat/conf/
+	sudo gedit server.xml
+	change <Connector port="8080" to <Connector port="8081"
+	sudo systemctl restart tomcat
+	
+Add User to tomcat
+	sudo cd /opt/tomcat/conf/
+	sudo gedit tomcat-users.xml
+	Add following line:
+	 <user username="admin" password="password" roles="manager-gui,manager-script"/>
+		
+Add war file to tomcat manager
+	Go to tomcat URL -> manager app -> war file to deploy -> add directory...
+	localhost:8081/example/
